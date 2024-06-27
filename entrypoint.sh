@@ -65,7 +65,7 @@ if [[ -n "$COMMENT_TAG" ]]; then
   COMMENT_TAG_EL="<!-- cybercyst/terraform-pr-commenter $COMMENT_TAG -->"
 
   echo -e "\033[34;1mINFO:\033[0m Looking for an existing plan PR comment."
-  PR_COMMENT_ID=$(curl -sS -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" -L "$PR_COMMENTS_URL" | jq --arg COMMENT_TAG "$COMMENT_TAG" '.[] | select(.body|test ("$COMMENT_TAG")) | .id')
+  PR_COMMENT_ID=$(curl -sS -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" -L "$PR_COMMENTS_URL" | jq --arg COMMENT_TAG_EL "$COMMENT_TAG_EL" '.[] | select(.body|contains("$COMMENT_TAG_EL")) | .id')
   if [ "$PR_COMMENT_ID" ]; then
     echo -e "\033[34;1mINFO:\033[0m Found existing PR comment: $PR_COMMENT_ID. Deleting."
     PR_COMMENT_URL="$PR_COMMENT_URI/$PR_COMMENT_ID"

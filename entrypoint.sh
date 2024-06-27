@@ -122,7 +122,7 @@ $ALL_FILES_DIFF"
   fi
 
   # Add fmt failure comment to PR.
-  PR_PAYLOAD=$(echo '{}' | jq --arg body "$PR_COMMENT" '.body = $body')
+  PR_PAYLOAD=$(echo '{}' | jq --arg body "$PR_COMMENT$COMMENT_TAG_EL" '.body = $body')
   echo -e "\033[34;1mINFO:\033[0m Adding fmt failure comment to PR."
   curl -sS -X POST -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" -H "$CONTENT_HEADER" -d "$PR_PAYLOAD" -L "$PR_COMMENTS_URL" >/dev/null
 
@@ -156,7 +156,7 @@ $INPUT
   fi
 
   # Add init failure comment to PR.
-  PR_PAYLOAD=$(echo '{}' | jq --arg body "$PR_COMMENT" '.body = $body')
+  PR_PAYLOAD=$(echo '{}' | jq --arg body "$PR_COMMENT$COMMENT_TAG_EL" '.body = $body')
   echo -e "\033[34;1mINFO:\033[0m Adding init failure comment to PR."
   curl -sS -X POST -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" -H "$CONTENT_HEADER" -d "$PR_PAYLOAD" -L "$PR_COMMENTS_URL" >/dev/null
 
@@ -201,7 +201,7 @@ $INPUT
   fi
 
   # Add plan comment to PR.
-  PR_PAYLOAD=$(echo '{}' | jq --arg body "$PR_COMMENT" '.body = $body')
+  PR_PAYLOAD=$(echo '{}' | jq --arg body "$PR_COMMENT$COMMENT_TAG_EL" '.body = $body')
   echo -e "\033[34;1mINFO:\033[0m Adding plan comment to PR."
   curl -sS -X POST -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" -H "$CONTENT_HEADER" -d "$PR_PAYLOAD" -L "$PR_COMMENTS_URL" >/dev/null
 
@@ -235,7 +235,7 @@ $INPUT
   fi
 
   # Add validate failure comment to PR.
-  PR_PAYLOAD=$(echo '{}' | jq --arg body "$PR_COMMENT" '.body = $body')
+  PR_PAYLOAD=$(echo '{}' | jq --arg body "$PR_COMMENT$COMMENT_TAG_EL" '.body = $body')
   echo -e "\033[34;1mINFO:\033[0m Adding validate failure comment to PR."
   curl -sS -X POST -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" -H "$CONTENT_HEADER" -d "$PR_PAYLOAD" -L "$PR_COMMENTS_URL" >/dev/null
 

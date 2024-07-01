@@ -19,11 +19,6 @@ if [[ -z $3 ]]; then
   exit 1
 fi
 
-if [[ ! "$1" =~ ^(fmt|init|plan|validate)$ ]]; then
-  echo -e "Unsupported command \"$1\". Valid commands are \"fmt\", \"init\", \"plan\", \"validate\"."
-  exit 1
-fi
-
 ##################
 # Shared Variables
 ##################
@@ -56,29 +51,13 @@ CONTENT_HEADER="Content-Type: application/json"
 PR_COMMENTS_URL=$(jq -r ".pull_request.comments_url" "$GITHUB_EVENT_PATH")
 PR_COMMENT_URI=$(jq -r ".repository.issue_comment_url" "$GITHUB_EVENT_PATH" | sed "s|{/number}||g")
 
-##############
-# remove existing tag if comment_tag is set
-##############
-COMMENT_TAG_EL=""
-if [[ -n "$COMMENT_TAG" ]]; then
-  echo -e "\033[34;1mINFO:\033[0m Looking for an existing PR comment."
-  COMMENT_TAG_EL="<!-- cybercyst/terraform-pr-commenter $COMMENT_TAG -->"
+PR_COMMENT=""
+case $COMMAND in
+"fmt")
+  ##############
+  # Handler: fmt
+  ##############
 
-  echo -e "\033[34;1mINFO:\033[0m Looking for an existing plan PR comment."
-  PR_COMMENT_ID=$(curl -sS -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" -L "$PR_COMMENTS_URL" | jq --arg COMMENT_TAG_EL "$COMMENT_TAG_EL" '.[] | select(.body|contains("$COMMENT_TAG_EL")) | .id')
-  if [ "$PR_COMMENT_ID" ]; then
-    echo -e "\033[34;1mINFO:\033[0m Found existing PR comment: $PR_COMMENT_ID. Deleting."
-    PR_COMMENT_URL="$PR_COMMENT_URI/$PR_COMMENT_ID"
-    curl -sS -X DELETE -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" -L "$PR_COMMENT_URL" >/dev/null
-  else
-    echo -e "\033[34;1mINFO:\033[0m No existing PR comment found."
-  fi
-fi
-
-##############
-# Handler: fmt
-##############
-if [[ $COMMAND == 'fmt' ]]; then
   # Exit Code: 0
   # Meaning: All files formatted correctly.
   # Actions: Exit.
@@ -120,19 +99,13 @@ $THIS_FILE_DIFF
     PR_COMMENT="### Terraform \`fmt\` Failed
 $ALL_FILES_DIFF"
   fi
+  ;;
 
-  # Add fmt failure comment to PR.
-  PR_PAYLOAD=$(echo '{}' | jq --arg body "$PR_COMMENT$COMMENT_TAG_EL" '.body = $body')
-  echo -e "\033[34;1mINFO:\033[0m Adding fmt failure comment to PR."
-  curl -sS -X POST -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" -H "$CONTENT_HEADER" -d "$PR_PAYLOAD" -L "$PR_COMMENTS_URL" >/dev/null
+"init")
+  ###############
+  # Handler: init
+  ###############
 
-  exit 0
-fi
-
-###############
-# Handler: init
-###############
-if [[ $COMMAND == 'init' ]]; then
   # Exit Code: 0
   # Meaning: Terraform successfully initialized.
   # Actions: Exit.
@@ -154,19 +127,13 @@ $INPUT
 \`\`\`
 </details>"
   fi
+  ;;
 
-  # Add init failure comment to PR.
-  PR_PAYLOAD=$(echo '{}' | jq --arg body "$PR_COMMENT$COMMENT_TAG_EL" '.body = $body')
-  echo -e "\033[34;1mINFO:\033[0m Adding init failure comment to PR."
-  curl -sS -X POST -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" -H "$CONTENT_HEADER" -d "$PR_PAYLOAD" -L "$PR_COMMENTS_URL" >/dev/null
+"plan")
+  ###############
+  # Handler: plan
+  ###############
 
-  exit 0
-fi
-
-###############
-# Handler: plan
-###############
-if [[ $COMMAND == 'plan' ]]; then
   # Exit Code: 0, 2
   # Meaning: 0 = Terraform plan succeeded with no changes. 2 = Terraform plan succeeded with changes.
   # Actions: Strip out the refresh section, ignore everything after the 72 dashes, format, colourise and build PR comment.
@@ -199,19 +166,13 @@ $INPUT
 \`\`\`
 </details>"
   fi
+  ;;
 
-  # Add plan comment to PR.
-  PR_PAYLOAD=$(echo '{}' | jq --arg body "$PR_COMMENT$COMMENT_TAG_EL" '.body = $body')
-  echo -e "\033[34;1mINFO:\033[0m Adding plan comment to PR."
-  curl -sS -X POST -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" -H "$CONTENT_HEADER" -d "$PR_PAYLOAD" -L "$PR_COMMENTS_URL" >/dev/null
+"validate")
+  ###################
+  # Handler: validate
+  ###################
 
-  exit 0
-fi
-
-###################
-# Handler: validate
-###################
-if [[ $COMMAND == 'validate' ]]; then
   # Exit Code: 0
   # Meaning: Terraform successfully validated.
   # Actions: Exit.
@@ -233,11 +194,34 @@ $INPUT
 \`\`\`
 </details>"
   fi
+  ;;
 
-  # Add validate failure comment to PR.
-  PR_PAYLOAD=$(echo '{}' | jq --arg body "$PR_COMMENT$COMMENT_TAG_EL" '.body = $body')
-  echo -e "\033[34;1mINFO:\033[0m Adding validate failure comment to PR."
-  curl -sS -X POST -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" -H "$CONTENT_HEADER" -d "$PR_PAYLOAD" -L "$PR_COMMENTS_URL" >/dev/null
+*)
+  echo -e "Unsupported command \"$COMMAND\". Valid commands are \"fmt\", \"init\", \"plan\", \"validate\"."
+  exit 1
+  ;;
+esac
 
-  exit 0
+##############
+# remove existing tag if comment_tag is set
+##############
+COMMENT_TAG_EL=""
+if [[ -n "$COMMENT_TAG" ]]; then
+  echo -e "\033[34;1mINFO:\033[0m Looking for an existing PR comment."
+  COMMENT_TAG_EL="<!-- cybercyst/terraform-pr-commenter $COMMENT_TAG -->"
+
+  echo -e "\033[34;1mINFO:\033[0m Looking for an existing plan PR comment."
+  PR_COMMENT_ID=$(curl -sS -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" -L "$PR_COMMENTS_URL" | jq --arg COMMENT_TAG_EL "$COMMENT_TAG_EL" '.[] | select(.body|contains($COMMENT_TAG_EL)) | .id')
+  if [ "$PR_COMMENT_ID" ]; then
+    echo -e "\033[34;1mINFO:\033[0m Found existing PR comment: $PR_COMMENT_ID. Deleting."
+    PR_COMMENT_URL="$PR_COMMENT_URI/$PR_COMMENT_ID"
+    curl -sS -X DELETE -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" -L "$PR_COMMENT_URL" >/dev/null
+  else
+    echo -e "\033[34;1mINFO:\033[0m No existing PR comment found."
+  fi
 fi
+
+# Add comment to PR.
+PR_PAYLOAD=$(echo '{}' | jq --arg body "$PR_COMMENT\n$COMMENT_TAG_EL" '.body = $body')
+echo -e "\033[34;1mINFO:\033[0m Adding comment to PR."
+curl -sS -X POST -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" -H "$CONTENT_HEADER" -d "$PR_PAYLOAD" -L "$PR_COMMENTS_URL" >/dev/null
